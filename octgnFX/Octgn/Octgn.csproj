@@ -136,6 +136,18 @@
     <Reference Include="agsXMPP">
       <HintPath>packages\agsXMPP.1.1.1.0\lib\agsXMPP.dll</HintPath>
     </Reference>
+    <Reference Include="AvalonDock">
+      <HintPath>..\..\packages\AvalonDock.2.0.1618\lib\net40\AvalonDock.dll</HintPath>
+    </Reference>
+    <Reference Include="AvalonDock.Themes.Aero">
+      <HintPath>..\..\packages\AvalonDock.2.0.1618\lib\net40\AvalonDock.Themes.Aero.dll</HintPath>
+    </Reference>
+    <Reference Include="AvalonDock.Themes.VS2010">
+      <HintPath>..\..\packages\AvalonDock.2.0.1618\lib\net40\AvalonDock.Themes.VS2010.dll</HintPath>
+    </Reference>
+    <Reference Include="ICSharpCode.AvalonEdit">
+      <HintPath>..\..\packages\AvalonEdit.4.2.0.8783\lib\Net40\ICSharpCode.AvalonEdit.dll</HintPath>
+    </Reference>
     <Reference Include="IronPython">
       <HintPath>packages\IronPython.2.7.3\lib\Net40\IronPython.dll</HintPath>
     </Reference>
@@ -240,6 +252,9 @@
       <DesignTime>True</DesignTime>
     </Compile>
     <Compile Include="Play\DefaultMarkerModel.cs" />
+    <Compile Include="Play\Dialogs\GameEditor.xaml.cs">
+      <DependentUpon>GameEditor.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Play\DragAdorner.cs" />
     <Compile Include="Utils\CacheTraceListener.cs" />
     <Compile Include="Utils\Cryptor.cs" />
@@ -573,6 +588,7 @@
     <Resource Include="Images\smith_user.png" />
     <Resource Include="Resources\none.jpg" />
     <Resource Include="Images\stock_flip_horizontally.png" />
+    <EmbeddedResource Include="Resources\Python.xshd" />
     <None Include="Resources\knockknock.wav" />
     <None Include="Resources\doorclose.wav" />
     <Resource Include="Resources\Icons\image_xml.png" />
@@ -718,6 +734,10 @@
     <Page Include="Launcher\StartGame.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Play\Dialogs\GameEditor.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Play\Dialogs\InteractiveConsole.xaml">
       <SubType>Designer</SubType>

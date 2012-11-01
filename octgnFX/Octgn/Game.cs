@@ -18,6 +18,8 @@ using Octgn.Utils;
 
 namespace Octgn
 {
+    using Octgn.Scripting;
+
     public class Game : INotifyPropertyChanged
     {
         private const int MaxRecentMarkers = 10;
@@ -36,6 +38,8 @@ namespace Octgn
         private ushort _uniqueId;
 
         private string nick;
+
+        public ScriptApi Api { get; set; }
 
         public bool IsLocal { get; private set; }
 

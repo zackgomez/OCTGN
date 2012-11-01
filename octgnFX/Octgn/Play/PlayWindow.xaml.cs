@@ -28,6 +28,9 @@ using System.Collections.Generic;
 
 namespace Octgn.Play
 {
+    using System.Threading;
+    using System.Threading.Tasks;
+
     public partial class PlayWindow
     {
         private bool _isLocal;
@@ -96,6 +99,11 @@ namespace Octgn.Play
             if (PartExists("http://schemas.octgn.info/game/font")) 
                 ExtractFont("http://schemas.octgn.info/game/font");
 
+            Loaded += (sender, args) =>
+                { new Task(() =>
+                    {
+                        Program.Game.Api.FireOnGameStart();
+                    }).Start(); };
 #if(!DEBUG)
             // Show the Scripting console in dev only
             if (Application.Current.Properties["ArbitraryArgName"] == null) return;
@@ -386,6 +394,26 @@ namespace Octgn.Play
                 return; // Do not tinker with the keyboard events when the focus is inside a textbox
             if (e.IsRepeat)
                 return;
+
+            if (e.Key == Key.F12)
+            {
+                if (Program.GameEditor != null)
+                {
+                    if (Program.GameEditor.Visibility == Visibility.Hidden)
+                    {
+                        Program.GameEditor.Visibility = Visibility.Visible;
+                    }
+                }
+                else
+                {
+                    Program.GameEditor = new GameEditor();
+                }
+
+                Program.GameEditor.LoadGame(Program.Game);
+                Program.GameEditor.Show();
+                return;
+            }
+
             IInputElement mouseOver = Mouse.DirectlyOver;
             var te = new TableKeyEventArgs(this, e);
             if (mouseOver != null) mouseOver.RaiseEvent(te);

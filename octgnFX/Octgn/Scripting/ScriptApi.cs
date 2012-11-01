@@ -21,6 +21,25 @@ namespace Octgn.Scripting
     [SecuritySafeCritical]
     public class ScriptApi : MarshalByRefObject
     {
+        public delegate void GameStartDelegate();
+
+        public event GameStartDelegate OnGameStart;
+
+        public void FireOnGameStart()
+        {
+            try
+            {
+                if(OnGameStart != null)
+                {
+                    OnGameStart.Invoke();
+                }
+            }
+            catch (Exception)
+            {
+                Debugger.Break();
+            }
+        }
+
         #region Private members
 
         private readonly Engine _engine;

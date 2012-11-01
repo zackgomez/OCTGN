@@ -43,7 +43,7 @@ namespace Octgn.Scripting
         // I would like to make this cleaner but it really seems to be an impass at the moment.
         // Combining Scripting + Remoting + Lifetime management + Garbage Collection + Partial trust
         // is an aweful and ugly mess.
-        private Sponsor _sponsor;
+        //private Sponsor _sponsor;
 
         public Engine()
             : this(false)
@@ -52,11 +52,10 @@ namespace Octgn.Scripting
 
         public Engine(bool forTesting)
         {
-            AppDomain sandbox = CreateSandbox(forTesting);
-            _engine = Python.CreateEngine(sandbox);
+            _engine = Python.CreateEngine();
             _outputWriter = new StreamWriter(_outputStream);
             _engine.Runtime.IO.SetOutput(_outputStream, _outputWriter);
-            _engine.SetSearchPaths(new[] {Path.Combine(sandbox.BaseDirectory, @"Scripting\Lib")});
+            _engine.SetSearchPaths(new[] {Path.Combine(Program.BasePath, @"Scripting\Lib")});
 
             _api = new ScriptApi(this);
 
@@ -65,10 +64,11 @@ namespace Octgn.Scripting
             foreach (
                 ScriptSource src in
                     Program.Game.Definition.Scripts.Select(
-                        s => _engine.CreateScriptSourceFromString(s.Python, SourceCodeKind.Statements)))
+                        s => _engine.CreateScriptSourceFromString(s.Python, SourceCodeKind.File)))
             {
                 src.Execute(ActionsScope);
             }
+            Program.Game.Api = _api;
         }
 
         internal ScriptJob CurrentJob
@@ -261,6 +261,12 @@ namespace Octgn.Scripting
 
         internal void Invoke(Action action)
         {
+            //TODO This is a hack...execution queue should never be empty
+            if (_executionQueue.Count == 0)
+            {
+                Program.PlayWindow.Dispatcher.Invoke(action);
+                return;
+            }
             ScriptJob job = CurrentJob;
             job.invokedOperation = () =>
                                        {
@@ -273,6 +279,11 @@ namespace Octgn.Scripting
 
         internal T Invoke<T>(Func<object> func)
         {
+            //TODO This is a hack...execution queue should never be empty
+            if (_executionQueue.Count == 0)
+            {
+                return (T)Program.PlayWindow.Dispatcher.Invoke(new Func<T>(() => { return (T)func.Invoke(); }));
+            }
             ScriptJob job = _executionQueue.Peek();
             job.invokedOperation = func;
             job.signal.Set();
@@ -290,12 +301,12 @@ namespace Octgn.Scripting
             // See comment on sponsor declaration
             // Note: this has to be done after api has been activated at least once remotely,
             // that's why the code is here rather than in the c'tor
-            if (_sponsor != null) return;
-            _sponsor = new Sponsor();
-            var life = (ILease) RemotingServices.GetLifetimeService(_api);
-            life.Register(_sponsor);
-            life = (ILease) RemotingServices.GetLifetimeService(_outputWriter);
-            life.Register(_sponsor);
+            //if (_sponsor != null) return;
+            //_sponsor = new Sponsor();
+            //var life = (ILease) RemotingServices.GetLifetimeService(_api);
+            //life.Register(_sponsor);
+            //life = (ILease) RemotingServices.GetLifetimeService(_outputWriter);
+            //life.Register(_sponsor);
         }
 
         private static AppDomain CreateSandbox(bool forTesting)
@@ -323,12 +334,12 @@ namespace Octgn.Scripting
 
         void IDisposable.Dispose()
         {
-            if (_sponsor == null) return;
-            // See comment on sponsor declaration
-            var life = (ILease) RemotingServices.GetLifetimeService(_api);
-            life.Unregister(_sponsor);
-            life = (ILease) RemotingServices.GetLifetimeService(_outputWriter);
-            life.Unregister(_sponsor);
+            //if (_sponsor == null) return;
+            //// See comment on sponsor declaration
+            //var life = (ILease) RemotingServices.GetLifetimeService(_api);
+            //life.Unregister(_sponsor);
+            //life = (ILease) RemotingServices.GetLifetimeService(_outputWriter);
+            //life.Unregister(_sponsor);
         }
 
         #endregion

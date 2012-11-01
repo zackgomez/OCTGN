@@ -23,14 +23,18 @@ using RE = System.Text.RegularExpressions;
 
 namespace Octgn
 {
+    using Octgn.Play.Dialogs;
+
     public static class Program
     {
+        // TODO Need a window manager class for fucks sake.
         public static Windows.DWindow DebugWindow;
         public static Main MainWindow;
         public static LauncherWindow LauncherWindow;
         public static DeckBuilderWindow DeckEditor;
         public static PlayWindow PlayWindow;
         public static List<ChatWindow> ChatWindows;
+        public static GameEditor GameEditor;
 
         public static Game Game;
 
