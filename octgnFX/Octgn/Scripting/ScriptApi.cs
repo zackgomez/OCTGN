@@ -167,7 +167,7 @@ namespace Octgn.Scripting
             if (!isAsync) return;
 
             pile.Shuffled += new ShuffleAsync {engine = _engine}.Continuation;
-            _engine.Suspend();
+            //_engine.Suspend();
         }
 
         private class ShuffleAsync
@@ -177,7 +177,7 @@ namespace Octgn.Scripting
             public void Continuation(object sender, EventArgs e)
             {
                 ((Group) sender).Shuffled -= Continuation;
-                engine.Resume();
+                //engine.Resume();
             }
         }
 
@@ -407,8 +407,8 @@ namespace Octgn.Scripting
 
         public void Mute(bool muted)
         {
-            ScriptJob job = _engine.CurrentJob;
-            _engine.CurrentJob.muted = muted ? job.id : 0;
+            //ScriptJob job = _engine.CurrentJob;
+            //_engine.CurrentJob.muted = muted ? job.id : 0;
         }
 
         public void Notify(string message)
@@ -474,9 +474,9 @@ namespace Octgn.Scripting
         {
             var capture = new RandomAsync {engine = _engine, reqId = RandomRequest.GenerateId()};
             RandomRequest.Completed += capture.Continuation;
-            using (new Mute(_engine.CurrentJob.muted))
+            //using (new Mute(_engine.CurrentJob.muted))
                 Program.Client.Rpc.RandomReq(capture.reqId, min, max);
-            _engine.Suspend();
+            //_engine.Suspend();
             return capture.result;
         }
 
@@ -493,7 +493,7 @@ namespace Octgn.Scripting
                 RandomRequest.Completed -= Continuation;
 
                 result = req.Result;
-                engine.Resume();
+                //engine.Resume();
             }
         }
 

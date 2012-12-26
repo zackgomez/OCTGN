@@ -1,25 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.Data.Odbc;
-using System.Data.OleDb;
-using System.Data.SqlClient;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Net.NetworkInformation;
-using System.Reflection;
-using System.Runtime.Remoting;
 using System.Runtime.Remoting.Lifetime;
 using System.Security;
 using System.Security.Permissions;
-using System.Security.Policy;
 using System.Text;
 using System.Threading;
 using System.Windows;
-using System.Xaml.Permissions;
+
 using IronPython.Hosting;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
@@ -30,20 +21,16 @@ using Octgn.Properties;
 
 namespace Octgn.Scripting
 {
+    using IronPython.Runtime.Exceptions;
+
     [Export]
     public class Engine : IDisposable
     {
         public readonly ScriptScope ActionsScope;
         private readonly ScriptApi _api;
         private readonly ScriptEngine _engine;
-        private readonly Queue<ScriptJob> _executionQueue = new Queue<ScriptJob>(4);
         private readonly MemoryStream _outputStream = new MemoryStream();
         private readonly StreamWriter _outputWriter;
-        // This is a hack. The sponsor object is used to keep the remote side of the Dialog API alive.
-        // I would like to make this cleaner but it really seems to be an impass at the moment.
-        // Combining Scripting + Remoting + Lifetime management + Garbage Collection + Partial trust
-        // is an aweful and ugly mess.
-        //private Sponsor _sponsor;
 
         public Engine()
             : this(false)
@@ -56,7 +43,7 @@ namespace Octgn.Scripting
             _outputWriter = new StreamWriter(_outputStream);
             _engine.Runtime.IO.SetOutput(_outputStream, _outputWriter);
             _engine.SetSearchPaths(new[] {Path.Combine(Program.BasePath, @"Scripting\Lib")});
-
+            
             _api = new ScriptApi(this);
 
             ActionsScope = CreateScope();
@@ -69,11 +56,6 @@ namespace Octgn.Scripting
                 src.Execute(ActionsScope);
             }
             Program.Game.Api = _api;
-        }
-
-        internal ScriptJob CurrentJob
-        {
-            get { return _executionQueue.Peek(); }
         }
 
         public String[] TestScripts(Game game)
@@ -172,162 +154,131 @@ namespace Octgn.Scripting
         private void StartExecution(ScriptSource src, ScriptScope scope, Action<ExecutionResult> continuation)
         {
             var job = new ScriptJob {source = src, scope = scope, continuation = continuation};
-            _executionQueue.Enqueue(job);
-            if (_executionQueue.Count == 1) // Other scripts may be hung. Scripts are executed in order.
-                ProcessExecutionQueue();
+            src.Execute(scope);
+            //_executionQueue.Enqueue(job);
+            //if (_executionQueue.Count == 1) // Other scripts may be hung. Scripts are executed in order.
+            //    ProcessExecutionQueue();
         }
 
-        private void ProcessExecutionQueue()
-        {
-            do
-            {
-                ScriptJob job = _executionQueue.Peek();
-                // Because some scripts have to be suspended during asynchronous operations (e.g. shuffle, reveal or random),
-                // their evaluation is done on another thread.
-                // The process still looks synchronous (no concurrency is allowed when manipulating the game model),
-                // which is why a ManualResetEvent is used to synchronise the work of both threads
-                if (job.suspended)
-                {
-                    job.suspended = false;
-                    job.signal2.Set();
-                }
-                else
-                {
-                    job.signal = new AutoResetEvent(false);
-                    job.signal2 = new AutoResetEvent(false);
-                    ThreadPool.QueueUserWorkItem(Execute, job);
-                }
+        //private void ProcessExecutionQueue()
+        //{
+        //    do
+        //    {
+        //        ScriptJob job = _executionQueue.Peek();
+        //        // Because some scripts have to be suspended during asynchronous operations (e.g. shuffle, reveal or random),
+        //        // their evaluation is done on another thread.
+        //        // The process still looks synchronous (no concurrency is allowed when manipulating the game model),
+        //        // which is why a ManualResetEvent is used to synchronise the work of both threads
+        //        if (job.suspended)
+        //        {
+        //            job.suspended = false;
+        //            job.signal2.Set();
+        //        }
+        //        else
+        //        {
+        //            job.signal = new AutoResetEvent(false);
+        //            job.signal2 = new AutoResetEvent(false);
+        //            ThreadPool.QueueUserWorkItem(Execute, job);
+        //        }
 
-                job.signal.WaitOne();
-                while (job.invokedOperation != null)
-                {
-                    using (new Mute(job.muted))
-                        job.invokeResult = job.invokedOperation();
-                    job.invokedOperation = null;
-                    job.signal2.Set();
-                    job.signal.WaitOne();
-                }
-                if (job.result != null && !String.IsNullOrWhiteSpace(job.result.Error))
-                {
-                    Program.TraceWarning("----Python Error----\n{0}\n----End Error----\n", job.result.Error);
-                }
-                if (job.suspended) return;
-                job.signal.Dispose();
-                job.signal2.Dispose();
-                _executionQueue.Dequeue();
+        //        job.signal.WaitOne();
+        //        while (job.invokedOperation != null)
+        //        {
+        //            using (new Mute(job.muted))
+        //                job.invokeResult = job.invokedOperation();
+        //            job.invokedOperation = null;
+        //            job.signal2.Set();
+        //            job.signal.WaitOne();
+        //        }
+        //        if (job.result != null && !String.IsNullOrWhiteSpace(job.result.Error))
+        //        {
+        //            Program.TraceWarning("----Python Error----\n{0}\n----End Error----\n", job.result.Error);
+        //        }
+        //        if (job.suspended) return;
+        //        job.signal.Dispose();
+        //        job.signal2.Dispose();
+        //        _executionQueue.Dequeue();
 
-                if (job.continuation != null)
-                    job.continuation(job.result);
-            } while (_executionQueue.Count > 0);
-        }
+        //        if (job.continuation != null)
+        //            job.continuation(job.result);
+        //    } while (_executionQueue.Count > 0);
+        //}
 
-        private void Execute(Object state)
-        {
-            var job = (ScriptJob) state;
-            var result = new ExecutionResult();
-            try
-            {
-                job.source.Execute(job.scope);
-                result.Output = Encoding.UTF8.GetString(_outputStream.ToArray(), 0, (int) _outputStream.Length);
-                // It looks like Python adds some \r in front of \n, which sometimes 
-                // (depending on the string source) results in doubled \r\r
-                result.Output = result.Output.Replace("\r\r", "\r");
-                _outputStream.SetLength(0);
-            }
-            catch (Exception ex)
-            {
-                var eo = _engine.GetService<ExceptionOperations>();
-                string error = eo.FormatException(ex);
-                result.Error = error + Environment.NewLine + job.source.GetCode();
-                //result.Error = String.Format("{0}\n{1}",ex.Message,ex.StackTrace);
-                //Program.TraceWarning("----Python Error----\n{0}\n----End Error----\n", result.Error);
-            }
-            job.result = result;
-            job.signal.Set();
-        }
+        //private void Execute(Object state)
+        //{
+        //    var job = (ScriptJob) state;
+        //    var result = new ExecutionResult();
+        //    try
+        //    {
+        //        job.source.Execute(job.scope);
+        //        result.Output = Encoding.UTF8.GetString(_outputStream.ToArray(), 0, (int) _outputStream.Length);
+        //        // It looks like Python adds some \r in front of \n, which sometimes 
+        //        // (depending on the string source) results in doubled \r\r
+        //        result.Output = result.Output.Replace("\r\r", "\r");
+        //        _outputStream.SetLength(0);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        var eo = _engine.GetService<ExceptionOperations>();
+        //        string error = eo.FormatException(ex);
+        //        result.Error = error + Environment.NewLine + job.source.GetCode();
+        //        //result.Error = String.Format("{0}\n{1}",ex.Message,ex.StackTrace);
+        //        //Program.TraceWarning("----Python Error----\n{0}\n----End Error----\n", result.Error);
+        //    }
+        //    job.result = result;
+        //    job.signal.Set();
+        //}
 
-        internal void Suspend()
-        {
-            ScriptJob job = CurrentJob;
-            job.suspended = true;
-            job.signal.Set();
-            job.signal2.WaitOne();
-        }
+        //internal void Suspend()
+        //{
+        //    ScriptJob job = CurrentJob;
+        //    job.suspended = true;
+        //    job.signal.Set();
+        //    job.signal2.WaitOne();
+        //}
 
-        internal void Resume()
-        {
-            ProcessExecutionQueue();
-        }
+        //internal void Resume()
+        //{
+        //    ProcessExecutionQueue();
+        //}
 
         internal void Invoke(Action action)
         {
-            //TODO This is a hack...execution queue should never be empty
-            if (_executionQueue.Count == 0)
-            {
-                Program.PlayWindow.Dispatcher.Invoke(action);
-                return;
-            }
-            ScriptJob job = CurrentJob;
-            job.invokedOperation = () =>
-                                       {
-                                           action();
-                                           return null;
-                                       };
-            job.signal.Set();
-            job.signal2.WaitOne();
+            ////TODO This is a hack...execution queue should never be empty
+            //if (_executionQueue.Count == 0)
+            //{
+            Program.PlayWindow.Dispatcher.Invoke(action);
+            //    return;
+            //}
+            //ScriptJob job = CurrentJob;
+            //job.invokedOperation = () =>
+            //                           {
+            //                               action();
+            //                               return null;
+            //                           };
+            //job.signal.Set();
+            //job.signal2.WaitOne();
         }
 
         internal T Invoke<T>(Func<object> func)
         {
-            //TODO This is a hack...execution queue should never be empty
-            if (_executionQueue.Count == 0)
-            {
+            ////TODO This is a hack...execution queue should never be empty
+            //if (_executionQueue.Count == 0)
+            //{
                 return (T)Program.PlayWindow.Dispatcher.Invoke(new Func<T>(() => { return (T)func.Invoke(); }));
-            }
-            ScriptJob job = _executionQueue.Peek();
-            job.invokedOperation = func;
-            job.signal.Set();
-            job.signal2.WaitOne();
-            return (T) job.invokeResult;
+            //}
+            //ScriptJob job = _executionQueue.Peek();
+            //job.invokedOperation = func;
+            //job.signal.Set();
+            //job.signal2.WaitOne();
+            //return (T) job.invokeResult;
         }
 
         private void InjectOctgnIntoScope(ScriptScope scope)
         {
             scope.SetVariable("_api", _api);
-            // For convenience reason, the definition of Python API objects is in a seperate file: PythonAPI.py
             _engine.Execute(Resources.CaseInsensitiveDict, scope);
             _engine.Execute(Resources.PythonAPI, scope);
-
-            // See comment on sponsor declaration
-            // Note: this has to be done after api has been activated at least once remotely,
-            // that's why the code is here rather than in the c'tor
-            //if (_sponsor != null) return;
-            //_sponsor = new Sponsor();
-            //var life = (ILease) RemotingServices.GetLifetimeService(_api);
-            //life.Register(_sponsor);
-            //life = (ILease) RemotingServices.GetLifetimeService(_outputWriter);
-            //life.Register(_sponsor);
-        }
-
-        private static AppDomain CreateSandbox(bool forTesting)
-        {
-            var permissions = new PermissionSet(PermissionState.None);
-            //if (forTesting)
-                permissions = new PermissionSet(PermissionState.Unrestricted);
-            
-            //permissions.AddPermission(new Permission)
-
-            permissions.AddPermission(
-                new SecurityPermission(SecurityPermissionFlag.AllFlags));
-            permissions.AddPermission(new UIPermission(UIPermissionWindow.AllWindows));
-            permissions.AddPermission(
-                new TypeDescriptorPermission(TypeDescriptorPermissionFlags.RestrictedRegistrationAccess));
-            permissions.AddPermission(
-                new FileIOPermission(FileIOPermissionAccess.Read | FileIOPermissionAccess.PathDiscovery,
-                                     AppDomain.CurrentDomain.BaseDirectory));
-            permissions.AddPermission(new ReflectionPermission(PermissionState.Unrestricted));
-            var appinfo = new AppDomainSetup {ApplicationBase = AppDomain.CurrentDomain.BaseDirectory};
-            return AppDomain.CreateDomain("Scripting sandbox", null, appinfo, permissions);
         }
 
         #region IDisposable
