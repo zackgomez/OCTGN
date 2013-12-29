@@ -5,6 +5,9 @@ namespace Octgn.Play
         public const int NonGame = 0;
         public const int Event = 1;
         public const int Chat = 2;
+		/// <summary>
+		/// Event message can't be muted
+		/// </summary>
         public const int Explicit = 4;
         public const int Turn = 8;
 

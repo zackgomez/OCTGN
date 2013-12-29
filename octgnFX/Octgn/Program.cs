@@ -23,6 +23,7 @@ namespace Octgn
     using Microsoft.Win32;
 
     using Octgn.Core;
+    using Octgn.Play.Messages;
     using Octgn.Windows;
 
     using log4net;
@@ -280,22 +281,25 @@ namespace Octgn
         internal static void TracePlayerEvent(Player player, string message, params object[] args)
         {
             var args1 = new List<object>(args) {player};
-            Trace.TraceEvent(TraceEventType.Information, EventIds.Event | EventIds.PlayerFlag(player), message,
-                             args1.ToArray());
+			GameMessage.PlayerEvent(player,message,args).Send();
+            //Trace.TraceEvent(TraceEventType.Information, EventIds.Event | EventIds.PlayerFlag(player), message,
+            //                 args1.ToArray());
         }
 
         internal static void TraceWarning(string message)
         {
             if (message == null) message = "";
-            if (Trace == null) return;
-            Trace.TraceEvent(TraceEventType.Warning, EventIds.NonGame, message);
+			GameMessage.Warning(message).Send();
+            //if (Trace == null) return;
+            //Trace.TraceEvent(TraceEventType.Warning, EventIds.NonGame, message);
         }
 
         internal static void TraceWarning(string message, params object[] args)
         {
             if (message == null) message = "";
-            if (Trace == null) return;
-            Trace.TraceEvent(TraceEventType.Warning, EventIds.NonGame, message, args);
+			GameMessage.Warning(message,args).Send();
+            //if (Trace == null) return;
+            //Trace.TraceEvent(TraceEventType.Warning, EventIds.NonGame, message, args);
         }
 
         public static void LaunchUrl(string url)

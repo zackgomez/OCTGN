@@ -21,6 +21,7 @@ namespace Octgn.Networking
 
     using Octgn.Core.Play;
     using Octgn.Core.Util;
+    using Octgn.Play.Messages;
     using Octgn.Play.State;
 
     internal sealed class Handler
@@ -126,7 +127,8 @@ namespace Octgn.Networking
 
         public void Chat(Player player, string text)
         {
-            Program.Trace.TraceEvent(TraceEventType.Information, EventIds.Chat | EventIds.PlayerFlag(player), "<{0}> {1}", player, text);
+            //Program.Trace.TraceEvent(TraceEventType.Information, EventIds.Chat | EventIds.PlayerFlag(player), "<{0}> {1}", player, text);
+			GameMessage.Chat(player,text).Send();
         }
 
         public void Print(Player player, string text)
