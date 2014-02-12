@@ -23,6 +23,7 @@ namespace Octgn.Scripting
 		private readonly Engine engine;
 		private readonly GameEngine gameEngine;
 		private readonly Dictionary<string,Octgn.DataNew.Entities.GameEvent[]> eventCache;
+		private Func<string,object[],bool> eventFilter;
 
 		public bool MuteEvents {get;set;}
 		public GameEventProxy(Engine scriptEngine, GameEngine gameEngine)
@@ -40,6 +41,17 @@ namespace Octgn.Scripting
 				eventCache["<#=e #>"] = gameEngine.Definition.Events["<#=e #>"];
 					<#
                 }#>
+		}
+
+		public void SetEventFilter(Func<string,object[],bool> action)
+		{
+			eventFilter = action;
+		}
+
+		private bool FireEventFilter(string name, params object[] args)
+		{
+			if(eventFilter == null)return true;
+			return eventFilter(name,args);
 		}
 	<#
 	foreach (var v in doc.Root.Elements().Where(x=>x.Name.LocalName == "eventversion"))
@@ -59,9 +71,11 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != <#= "C" + version #> )
 				return;
+<#var paramArray = eve.Elements().Where(x => x.Name.LocalName == "param").ToArray();
+			var comma = paramArray.Length == 0 ?"": ","; #>
+			if(FireEventFilter("<#=bareEventName #>"<#= comma #><#= ParametersList(eve,false) #>) == false) return;
 			Log.Info("Firing event <#=  eventName #>");
 			<#
-			var paramArray = eve.Elements().Where(x => x.Name.LocalName == "param").ToArray();
 			if (paramArray.Length > 0)
 			{
 				WriteLine("var args = new object[{0}];", paramArray.Length);
@@ -74,20 +88,19 @@ namespace Octgn.Scripting
 				WriteLine("args[{0}] = {1};", i, paramArray[i].Attribute("name").Value);
 				//PopIndent();
 			}
-			var comma = paramArray.Length == 0 ?
-				""
-				: ",";
 			PopIndent();
 			PopIndent();
 		  #>    
-			foreach(var e in eventCache["<#= bareEventName #>"])
-			{
-				Log.InfoFormat("Firing event <#= eventName #> -> {0}",e.Name);
-				engine.ExecuteFunction(e.PythonFunction<#= comma #><#= ParametersList(eve,false) #>);
-			}<#
+		foreach(var e in eventCache["<#= bareEventName #>"])
+		{
+			Log.InfoFormat("Firing event <#= eventName #> -> {0}",e.Name);
+			engine.ExecuteFunction(e.PythonFunction<#= comma #><#= ParametersList(eve,false) #>);
+		}<#
 		PopIndent();
 			#>
+		
 		}
+
 <# } }#>
 	}
 }

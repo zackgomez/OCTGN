@@ -6,8 +6,6 @@
  * To create the .CS file for this document, 
  * right click the .tt file and click 'Run Custom Tool'
  */
-
-
 using System;
 using System.Collections.Generic;
 using Octgn.Play;
@@ -21,6 +19,7 @@ namespace Octgn.Scripting
 		private readonly Engine engine;
 		private readonly GameEngine gameEngine;
 		private readonly Dictionary<string,Octgn.DataNew.Entities.GameEvent[]> eventCache;
+		private Func<string,object[],bool> eventFilter;
 
 		public bool MuteEvents {get;set;}
 		public GameEventProxy(Engine scriptEngine, GameEngine gameEngine)
@@ -28,83 +27,78 @@ namespace Octgn.Scripting
 			engine = scriptEngine;
 			this.gameEngine = gameEngine;
 			eventCache = new Dictionary<string,Octgn.DataNew.Entities.GameEvent[]>();
-			
-			eventCache.Add("OnTableLoad",new DataNew.Entities.GameEvent[0]);
+						eventCache.Add("OnTableLoad",new DataNew.Entities.GameEvent[0]);
 			if(gameEngine.Definition.Events.ContainsKey("OnTableLoad"))
 				eventCache["OnTableLoad"] = gameEngine.Definition.Events["OnTableLoad"];
-					
-			eventCache.Add("OnGameStart",new DataNew.Entities.GameEvent[0]);
+								eventCache.Add("OnGameStart",new DataNew.Entities.GameEvent[0]);
 			if(gameEngine.Definition.Events.ContainsKey("OnGameStart"))
 				eventCache["OnGameStart"] = gameEngine.Definition.Events["OnGameStart"];
-					
-			eventCache.Add("OnLoadDeck",new DataNew.Entities.GameEvent[0]);
+								eventCache.Add("OnLoadDeck",new DataNew.Entities.GameEvent[0]);
 			if(gameEngine.Definition.Events.ContainsKey("OnLoadDeck"))
 				eventCache["OnLoadDeck"] = gameEngine.Definition.Events["OnLoadDeck"];
-					
-			eventCache.Add("OnChangeCounter",new DataNew.Entities.GameEvent[0]);
+								eventCache.Add("OnChangeCounter",new DataNew.Entities.GameEvent[0]);
 			if(gameEngine.Definition.Events.ContainsKey("OnChangeCounter"))
 				eventCache["OnChangeCounter"] = gameEngine.Definition.Events["OnChangeCounter"];
-					
-			eventCache.Add("OnEndTurn",new DataNew.Entities.GameEvent[0]);
+								eventCache.Add("OnEndTurn",new DataNew.Entities.GameEvent[0]);
 			if(gameEngine.Definition.Events.ContainsKey("OnEndTurn"))
 				eventCache["OnEndTurn"] = gameEngine.Definition.Events["OnEndTurn"];
-					
-			eventCache.Add("OnTurn",new DataNew.Entities.GameEvent[0]);
+								eventCache.Add("OnTurn",new DataNew.Entities.GameEvent[0]);
 			if(gameEngine.Definition.Events.ContainsKey("OnTurn"))
 				eventCache["OnTurn"] = gameEngine.Definition.Events["OnTurn"];
-					
-			eventCache.Add("OnTargetCard",new DataNew.Entities.GameEvent[0]);
+								eventCache.Add("OnTargetCard",new DataNew.Entities.GameEvent[0]);
 			if(gameEngine.Definition.Events.ContainsKey("OnTargetCard"))
 				eventCache["OnTargetCard"] = gameEngine.Definition.Events["OnTargetCard"];
-					
-			eventCache.Add("OnTargetCardArrow",new DataNew.Entities.GameEvent[0]);
+								eventCache.Add("OnTargetCardArrow",new DataNew.Entities.GameEvent[0]);
 			if(gameEngine.Definition.Events.ContainsKey("OnTargetCardArrow"))
 				eventCache["OnTargetCardArrow"] = gameEngine.Definition.Events["OnTargetCardArrow"];
-					
-			eventCache.Add("OnMoveCard",new DataNew.Entities.GameEvent[0]);
+								eventCache.Add("OnMoveCard",new DataNew.Entities.GameEvent[0]);
 			if(gameEngine.Definition.Events.ContainsKey("OnMoveCard"))
 				eventCache["OnMoveCard"] = gameEngine.Definition.Events["OnMoveCard"];
-					
-			eventCache.Add("OnPlayerGlobalVariableChanged",new DataNew.Entities.GameEvent[0]);
+								eventCache.Add("OnPlayerGlobalVariableChanged",new DataNew.Entities.GameEvent[0]);
 			if(gameEngine.Definition.Events.ContainsKey("OnPlayerGlobalVariableChanged"))
 				eventCache["OnPlayerGlobalVariableChanged"] = gameEngine.Definition.Events["OnPlayerGlobalVariableChanged"];
-					
-			eventCache.Add("OnGlobalVariableChanged",new DataNew.Entities.GameEvent[0]);
+								eventCache.Add("OnGlobalVariableChanged",new DataNew.Entities.GameEvent[0]);
 			if(gameEngine.Definition.Events.ContainsKey("OnGlobalVariableChanged"))
 				eventCache["OnGlobalVariableChanged"] = gameEngine.Definition.Events["OnGlobalVariableChanged"];
-					
-			eventCache.Add("OnCardClick",new DataNew.Entities.GameEvent[0]);
+								eventCache.Add("OnCardClick",new DataNew.Entities.GameEvent[0]);
 			if(gameEngine.Definition.Events.ContainsKey("OnCardClick"))
 				eventCache["OnCardClick"] = gameEngine.Definition.Events["OnCardClick"];
-					
-			eventCache.Add("OnCardDoubleClick",new DataNew.Entities.GameEvent[0]);
+								eventCache.Add("OnCardDoubleClick",new DataNew.Entities.GameEvent[0]);
 			if(gameEngine.Definition.Events.ContainsKey("OnCardDoubleClick"))
 				eventCache["OnCardDoubleClick"] = gameEngine.Definition.Events["OnCardDoubleClick"];
-					
-			eventCache.Add("OnMarkerChanged",new DataNew.Entities.GameEvent[0]);
+								eventCache.Add("OnMarkerChanged",new DataNew.Entities.GameEvent[0]);
 			if(gameEngine.Definition.Events.ContainsKey("OnMarkerChanged"))
 				eventCache["OnMarkerChanged"] = gameEngine.Definition.Events["OnMarkerChanged"];
-					
-			eventCache.Add("OnScriptedMoveCard",new DataNew.Entities.GameEvent[0]);
+								eventCache.Add("OnScriptedMoveCard",new DataNew.Entities.GameEvent[0]);
 			if(gameEngine.Definition.Events.ContainsKey("OnScriptedMoveCard"))
 				eventCache["OnScriptedMoveCard"] = gameEngine.Definition.Events["OnScriptedMoveCard"];
-					
+							}
+
+		public void SetEventFilter(Func<string,object[],bool> action)
+		{
+			eventFilter = action;
+		}
+
+		private bool FireEventFilter(string name, params object[] args)
+		{
+			if(eventFilter == null)return true;
+			return eventFilter(name,args);
 		}
 		private static readonly Version C_3_1_0_0 = Version.Parse("3.1.0.0");
-
 		public void OnTableLoad_3_1_0_0()
 		{
 			if(Player.LocalPlayer.Spectator)return;
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_0 )
 				return;
+			if(FireEventFilter("OnTableLoad") == false) return;
 			Log.Info("Firing event OnTableLoad_3_1_0_0");
 			    
 			foreach(var e in eventCache["OnTableLoad"])
 			{
 				Log.InfoFormat("Firing event OnTableLoad_3_1_0_0 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction);
-			}
+			}		
 		}
 
 		public void OnGameStart_3_1_0_0()
@@ -113,13 +107,14 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_0 )
 				return;
+			if(FireEventFilter("OnGameStart") == false) return;
 			Log.Info("Firing event OnGameStart_3_1_0_0");
 			    
 			foreach(var e in eventCache["OnGameStart"])
 			{
 				Log.InfoFormat("Firing event OnGameStart_3_1_0_0 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction);
-			}
+			}		
 		}
 
 		public void OnLoadDeck_3_1_0_0(Player player, Group[] groups)
@@ -128,6 +123,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_0 )
 				return;
+			if(FireEventFilter("OnLoadDeck",player, groups) == false) return;
 			Log.Info("Firing event OnLoadDeck_3_1_0_0");
 			var args = new object[2];
 			args[0] = player;
@@ -137,7 +133,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnLoadDeck_3_1_0_0 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,player, groups);
-			}
+			}		
 		}
 
 		public void OnChangeCounter_3_1_0_0(Player player, Counter counter, int oldValue)
@@ -146,6 +142,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_0 )
 				return;
+			if(FireEventFilter("OnChangeCounter",player, counter, oldValue) == false) return;
 			Log.Info("Firing event OnChangeCounter_3_1_0_0");
 			var args = new object[3];
 			args[0] = player;
@@ -156,7 +153,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnChangeCounter_3_1_0_0 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,player, counter, oldValue);
-			}
+			}		
 		}
 
 		public void OnEndTurn_3_1_0_0(Player player)
@@ -165,6 +162,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_0 )
 				return;
+			if(FireEventFilter("OnEndTurn",player) == false) return;
 			Log.Info("Firing event OnEndTurn_3_1_0_0");
 			var args = new object[1];
 			args[0] = player;
@@ -173,7 +171,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnEndTurn_3_1_0_0 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,player);
-			}
+			}		
 		}
 
 		public void OnTurn_3_1_0_0(Player player, int turnNumber)
@@ -182,6 +180,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_0 )
 				return;
+			if(FireEventFilter("OnTurn",player, turnNumber) == false) return;
 			Log.Info("Firing event OnTurn_3_1_0_0");
 			var args = new object[2];
 			args[0] = player;
@@ -191,7 +190,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnTurn_3_1_0_0 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,player, turnNumber);
-			}
+			}		
 		}
 
 		public void OnTargetCard_3_1_0_0(Player player, Card card, bool isTargeted)
@@ -200,6 +199,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_0 )
 				return;
+			if(FireEventFilter("OnTargetCard",player, card, isTargeted) == false) return;
 			Log.Info("Firing event OnTargetCard_3_1_0_0");
 			var args = new object[3];
 			args[0] = player;
@@ -210,7 +210,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnTargetCard_3_1_0_0 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,player, card, isTargeted);
-			}
+			}		
 		}
 
 		public void OnTargetCardArrow_3_1_0_0(Player player, Card fromCard, Card toCard, bool isTargeted)
@@ -219,6 +219,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_0 )
 				return;
+			if(FireEventFilter("OnTargetCardArrow",player, fromCard, toCard, isTargeted) == false) return;
 			Log.Info("Firing event OnTargetCardArrow_3_1_0_0");
 			var args = new object[4];
 			args[0] = player;
@@ -230,7 +231,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnTargetCardArrow_3_1_0_0 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,player, fromCard, toCard, isTargeted);
-			}
+			}		
 		}
 
 		public void OnMoveCard_3_1_0_0(Player player, Card card, Group fromGroup, Group toGroup, int oldIndex, int index, int oldX, int oldY, int x, int y, bool isScriptMove)
@@ -239,6 +240,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_0 )
 				return;
+			if(FireEventFilter("OnMoveCard",player, card, fromGroup, toGroup, oldIndex, index, oldX, oldY, x, y, isScriptMove) == false) return;
 			Log.Info("Firing event OnMoveCard_3_1_0_0");
 			var args = new object[11];
 			args[0] = player;
@@ -257,7 +259,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnMoveCard_3_1_0_0 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,player, card, fromGroup, toGroup, oldIndex, index, oldX, oldY, x, y, isScriptMove);
-			}
+			}		
 		}
 
 		public void OnPlayerGlobalVariableChanged_3_1_0_0(Player player, string name, string oldValue, string Value)
@@ -266,6 +268,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_0 )
 				return;
+			if(FireEventFilter("OnPlayerGlobalVariableChanged",player, name, oldValue, Value) == false) return;
 			Log.Info("Firing event OnPlayerGlobalVariableChanged_3_1_0_0");
 			var args = new object[4];
 			args[0] = player;
@@ -277,7 +280,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnPlayerGlobalVariableChanged_3_1_0_0 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,player, name, oldValue, Value);
-			}
+			}		
 		}
 
 		public void OnGlobalVariableChanged_3_1_0_0(string name, string oldValue, string Value)
@@ -286,6 +289,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_0 )
 				return;
+			if(FireEventFilter("OnGlobalVariableChanged",name, oldValue, Value) == false) return;
 			Log.Info("Firing event OnGlobalVariableChanged_3_1_0_0");
 			var args = new object[3];
 			args[0] = name;
@@ -296,7 +300,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnGlobalVariableChanged_3_1_0_0 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,name, oldValue, Value);
-			}
+			}		
 		}
 
 		public void OnCardClick_3_1_0_0(Card card, int mouseButton, string[] keysDown)
@@ -305,6 +309,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_0 )
 				return;
+			if(FireEventFilter("OnCardClick",card, mouseButton, keysDown) == false) return;
 			Log.Info("Firing event OnCardClick_3_1_0_0");
 			var args = new object[3];
 			args[0] = card;
@@ -315,7 +320,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnCardClick_3_1_0_0 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,card, mouseButton, keysDown);
-			}
+			}		
 		}
 
 		public void OnCardDoubleClick_3_1_0_0(Card card, int mouseButton, string[] keysDown)
@@ -324,6 +329,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_0 )
 				return;
+			if(FireEventFilter("OnCardDoubleClick",card, mouseButton, keysDown) == false) return;
 			Log.Info("Firing event OnCardDoubleClick_3_1_0_0");
 			var args = new object[3];
 			args[0] = card;
@@ -334,7 +340,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnCardDoubleClick_3_1_0_0 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,card, mouseButton, keysDown);
-			}
+			}		
 		}
 
 		public void OnMarkerChanged_3_1_0_0(Card card, string markerName, int oldValue, int newValue, bool isScriptChange)
@@ -343,6 +349,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_0 )
 				return;
+			if(FireEventFilter("OnMarkerChanged",card, markerName, oldValue, newValue, isScriptChange) == false) return;
 			Log.Info("Firing event OnMarkerChanged_3_1_0_0");
 			var args = new object[5];
 			args[0] = card;
@@ -355,23 +362,24 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnMarkerChanged_3_1_0_0 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,card, markerName, oldValue, newValue, isScriptChange);
-			}
+			}		
 		}
-	private static readonly Version C_3_1_0_1 = Version.Parse("3.1.0.1");
 
+	private static readonly Version C_3_1_0_1 = Version.Parse("3.1.0.1");
 		public void OnTableLoad_3_1_0_1()
 		{
 			if(Player.LocalPlayer.Spectator)return;
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_1 )
 				return;
+			if(FireEventFilter("OnTableLoad") == false) return;
 			Log.Info("Firing event OnTableLoad_3_1_0_1");
 			    
 			foreach(var e in eventCache["OnTableLoad"])
 			{
 				Log.InfoFormat("Firing event OnTableLoad_3_1_0_1 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction);
-			}
+			}		
 		}
 
 		public void OnGameStart_3_1_0_1()
@@ -380,13 +388,14 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_1 )
 				return;
+			if(FireEventFilter("OnGameStart") == false) return;
 			Log.Info("Firing event OnGameStart_3_1_0_1");
 			    
 			foreach(var e in eventCache["OnGameStart"])
 			{
 				Log.InfoFormat("Firing event OnGameStart_3_1_0_1 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction);
-			}
+			}		
 		}
 
 		public void OnLoadDeck_3_1_0_1(Player player, Group[] groups)
@@ -395,6 +404,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_1 )
 				return;
+			if(FireEventFilter("OnLoadDeck",player, groups) == false) return;
 			Log.Info("Firing event OnLoadDeck_3_1_0_1");
 			var args = new object[2];
 			args[0] = player;
@@ -404,7 +414,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnLoadDeck_3_1_0_1 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,player, groups);
-			}
+			}		
 		}
 
 		public void OnChangeCounter_3_1_0_1(Player player, Counter counter, int oldValue)
@@ -413,6 +423,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_1 )
 				return;
+			if(FireEventFilter("OnChangeCounter",player, counter, oldValue) == false) return;
 			Log.Info("Firing event OnChangeCounter_3_1_0_1");
 			var args = new object[3];
 			args[0] = player;
@@ -423,7 +434,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnChangeCounter_3_1_0_1 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,player, counter, oldValue);
-			}
+			}		
 		}
 
 		public void OnEndTurn_3_1_0_1(Player player)
@@ -432,6 +443,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_1 )
 				return;
+			if(FireEventFilter("OnEndTurn",player) == false) return;
 			Log.Info("Firing event OnEndTurn_3_1_0_1");
 			var args = new object[1];
 			args[0] = player;
@@ -440,7 +452,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnEndTurn_3_1_0_1 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,player);
-			}
+			}		
 		}
 
 		public void OnTurn_3_1_0_1(Player player, int turnNumber)
@@ -449,6 +461,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_1 )
 				return;
+			if(FireEventFilter("OnTurn",player, turnNumber) == false) return;
 			Log.Info("Firing event OnTurn_3_1_0_1");
 			var args = new object[2];
 			args[0] = player;
@@ -458,7 +471,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnTurn_3_1_0_1 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,player, turnNumber);
-			}
+			}		
 		}
 
 		public void OnTargetCard_3_1_0_1(Player player, Card card, bool isTargeted)
@@ -467,6 +480,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_1 )
 				return;
+			if(FireEventFilter("OnTargetCard",player, card, isTargeted) == false) return;
 			Log.Info("Firing event OnTargetCard_3_1_0_1");
 			var args = new object[3];
 			args[0] = player;
@@ -477,7 +491,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnTargetCard_3_1_0_1 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,player, card, isTargeted);
-			}
+			}		
 		}
 
 		public void OnTargetCardArrow_3_1_0_1(Player player, Card fromCard, Card toCard, bool isTargeted)
@@ -486,6 +500,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_1 )
 				return;
+			if(FireEventFilter("OnTargetCardArrow",player, fromCard, toCard, isTargeted) == false) return;
 			Log.Info("Firing event OnTargetCardArrow_3_1_0_1");
 			var args = new object[4];
 			args[0] = player;
@@ -497,7 +512,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnTargetCardArrow_3_1_0_1 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,player, fromCard, toCard, isTargeted);
-			}
+			}		
 		}
 
 		public void OnPlayerGlobalVariableChanged_3_1_0_1(Player player, string name, string oldValue, string Value)
@@ -506,6 +521,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_1 )
 				return;
+			if(FireEventFilter("OnPlayerGlobalVariableChanged",player, name, oldValue, Value) == false) return;
 			Log.Info("Firing event OnPlayerGlobalVariableChanged_3_1_0_1");
 			var args = new object[4];
 			args[0] = player;
@@ -517,7 +533,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnPlayerGlobalVariableChanged_3_1_0_1 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,player, name, oldValue, Value);
-			}
+			}		
 		}
 
 		public void OnGlobalVariableChanged_3_1_0_1(string name, string oldValue, string Value)
@@ -526,6 +542,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_1 )
 				return;
+			if(FireEventFilter("OnGlobalVariableChanged",name, oldValue, Value) == false) return;
 			Log.Info("Firing event OnGlobalVariableChanged_3_1_0_1");
 			var args = new object[3];
 			args[0] = name;
@@ -536,7 +553,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnGlobalVariableChanged_3_1_0_1 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,name, oldValue, Value);
-			}
+			}		
 		}
 
 		public void OnCardClick_3_1_0_1(Card card, int mouseButton, string[] keysDown)
@@ -545,6 +562,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_1 )
 				return;
+			if(FireEventFilter("OnCardClick",card, mouseButton, keysDown) == false) return;
 			Log.Info("Firing event OnCardClick_3_1_0_1");
 			var args = new object[3];
 			args[0] = card;
@@ -555,7 +573,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnCardClick_3_1_0_1 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,card, mouseButton, keysDown);
-			}
+			}		
 		}
 
 		public void OnCardDoubleClick_3_1_0_1(Card card, int mouseButton, string[] keysDown)
@@ -564,6 +582,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_1 )
 				return;
+			if(FireEventFilter("OnCardDoubleClick",card, mouseButton, keysDown) == false) return;
 			Log.Info("Firing event OnCardDoubleClick_3_1_0_1");
 			var args = new object[3];
 			args[0] = card;
@@ -574,7 +593,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnCardDoubleClick_3_1_0_1 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,card, mouseButton, keysDown);
-			}
+			}		
 		}
 
 		public void OnMarkerChanged_3_1_0_1(Card card, string markerName, int oldValue, int newValue, bool isScriptChange)
@@ -583,6 +602,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_1 )
 				return;
+			if(FireEventFilter("OnMarkerChanged",card, markerName, oldValue, newValue, isScriptChange) == false) return;
 			Log.Info("Firing event OnMarkerChanged_3_1_0_1");
 			var args = new object[5];
 			args[0] = card;
@@ -595,7 +615,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnMarkerChanged_3_1_0_1 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,card, markerName, oldValue, newValue, isScriptChange);
-			}
+			}		
 		}
 
 		public void OnMoveCard_3_1_0_1(Player player, Card card, Group fromGroup, Group toGroup, int oldIndex, int index, int oldX, int oldY, int x, int y, bool isScriptMove, string highlight, string markers)
@@ -604,6 +624,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_1 )
 				return;
+			if(FireEventFilter("OnMoveCard",player, card, fromGroup, toGroup, oldIndex, index, oldX, oldY, x, y, isScriptMove, highlight, markers) == false) return;
 			Log.Info("Firing event OnMoveCard_3_1_0_1");
 			var args = new object[13];
 			args[0] = player;
@@ -624,7 +645,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnMoveCard_3_1_0_1 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,player, card, fromGroup, toGroup, oldIndex, index, oldX, oldY, x, y, isScriptMove, highlight, markers);
-			}
+			}		
 		}
 
 		public void OnScriptedMoveCard_3_1_0_1(Player player, Card card, Group fromGroup, Group toGroup, int oldIndex, int index, int oldX, int oldY, int x, int y, bool isScriptMove, string highlight, string markers)
@@ -633,6 +654,7 @@ namespace Octgn.Scripting
 			if(MuteEvents)return;
 			if(gameEngine.Definition.ScriptVersion != C_3_1_0_1 )
 				return;
+			if(FireEventFilter("OnScriptedMoveCard",player, card, fromGroup, toGroup, oldIndex, index, oldX, oldY, x, y, isScriptMove, highlight, markers) == false) return;
 			Log.Info("Firing event OnScriptedMoveCard_3_1_0_1");
 			var args = new object[13];
 			args[0] = player;
@@ -653,7 +675,7 @@ namespace Octgn.Scripting
 			{
 				Log.InfoFormat("Firing event OnScriptedMoveCard_3_1_0_1 -> {0}",e.Name);
 				engine.ExecuteFunction(e.PythonFunction,player, card, fromGroup, toGroup, oldIndex, index, oldX, oldY, x, y, isScriptMove, highlight, markers);
-			}
+			}		
 		}
 
 	}

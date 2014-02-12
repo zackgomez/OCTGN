@@ -57,6 +57,10 @@ namespace Octgn.Scripting
         {
 			Program.GameEngine.ScriptEngine = this;
 			Program.GameEngine.EventProxy = new GameEventProxy(this, Program.GameEngine);
+			Program.GameEngine.EventProxy.SetEventFilter((name, args) =>
+			{
+			    if (name == "jim") return false;
+			});
         }
 
         public void SetupEngine(bool testing)
