@@ -445,7 +445,7 @@
                         var to = new GroupActionGroup
                         {
                             Children = new List<IGroupAction>(),
-                            Name = i.menu
+                            Name = i.menu,
                         };
                         if (item is cardActionSubmenu)
                         {
@@ -462,7 +462,8 @@
                     }
                     else if (item is actionSeparator)
                     {
-                        var separator = new GroupActionSeparator();
+                        var separator = new GroupActionSeparator {
+                        };
                         if (item is groupActionSeparator)
                         {
                             separator.IsGroup = true;
